@@ -1,0 +1,237 @@
+<section class="adoption-header">
+  <h2>🏡 Adopción de Michis</h2>
+  <p class="adoption-subtitle">Estos gatitos esperan un hogar lleno de amor. ¿Será el tuyo?</p>
+</section>
+
+<div id="adoptionMsg" class="alert" style="display:none;"></div>
+
+<!-- Grid de michis en adopción -->
+<div class="adoption-grid" id="adoptionGrid">
+  <p class="loading-text">Cargando michis...</p>
+</div>
+
+<!-- Modal formulario de adopción -->
+<div id="adoptionModal" class="modal" style="display:none;">
+  <div class="modal-overlay" onclick="closeModal()"></div>
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>Quiero adoptar a <span id="modalCatName"></span> 😺</h3>
+    <p class="modal-subtitle">Completa el formulario y nos pondremos en contacto contigo.</p>
+
+    <div class="adoption-form">
+      <div class="form-group">
+        <label for="adopterName">Tu nombre completo *</label>
+        <input type="text" id="adopterName" placeholder="Ej: Ana García" required />
+      </div>
+      <div class="form-group">
+        <label for="adopterEmail">Correo electrónico *</label>
+        <input type="email" id="adopterEmail" placeholder="ana@ejemplo.cl" required />
+      </div>
+      <div class="form-group">
+        <label for="adopterPhone">Teléfono de contacto *</label>
+        <input type="tel" id="adopterPhone" placeholder="+56 9 1234 5678" required />
+      </div>
+      <div class="form-group">
+        <label for="adopterAddress">Dirección (ciudad/comuna) *</label>
+        <input type="text" id="adopterAddress" placeholder="Ej: Providencia, Santiago" required />
+      </div>
+      <div class="form-group">
+        <label for="adopterHousing">Tipo de vivienda *</label>
+        <select id="adopterHousing">
+          <option value="">Selecciona una opción</option>
+          <option value="casa">Casa con patio</option>
+          <option value="depto">Departamento</option>
+          <option value="casa-sin-patio">Casa sin patio</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="adopterExperience">¿Has tenido gatos antes?</label>
+        <select id="adopterExperience">
+          <option value="si">Sí, tengo experiencia</option>
+          <option value="no">No, sería mi primer gato</option>
+          <option value="actualmente">Sí, actualmente tengo gatos</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="adopterMessage">Cuéntanos por qué quieres adoptar a este michi</label>
+        <textarea id="adopterMessage" rows="4" placeholder="Un poco sobre ti y tu hogar..."></textarea>
+      </div>
+
+      <div id="formMsg" class="alert" style="display:none;"></div>
+
+      <div class="form-actions">
+        <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+        <button class="btn-primary" onclick="submitAdoption()">Enviar solicitud 🐾</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Michis en adopción con fotos reales de cats API
+  const cats = [
+    {
+      id: 1,
+      name: "Manchas",
+      age: "2 años",
+      gender: "Macho",
+      description: "Manchas es un gato juguetón y cariñoso. Le encanta trepar y explorar. Está castrado y al día con sus vacunas.",
+      image: "https://cataas.com/cat/says/Manchas?width=400&height=300",
+      tags: ["Castrado", "Vacunado", "Juguetón"],
+      color: "Blanco y negro"
+    },
+    {
+      id: 2,
+      name: "Luna",
+      age: "1 año",
+      gender: "Hembra",
+      description: "Luna es tímida al principio pero muy dulce una vez que te conoce. Ideal para hogares tranquilos. Esterilizada.",
+      image: "https://cataas.com/cat/says/Luna?width=400&height=300",
+      tags: ["Esterilizada", "Vacunada", "Tranquila"],
+      color: "Gris plateado"
+    },
+    {
+      id: 3,
+      name: "Naranja",
+      age: "6 meses",
+      gender: "Macho",
+      description: "¡Naranja es pura energía! Gatito joven que busca una familia activa con ganas de jugar. Muy sociable.",
+      image: "https://cataas.com/cat/says/Naranja?width=400&height=300",
+      tags: ["Cachorro", "Sociable", "Energético"],
+      color: "Anaranjado"
+    },
+    {
+      id: 4,
+      name: "Nieve",
+      age: "4 años",
+      gender: "Hembra",
+      description: "Nieve es un gata adulta muy serena. Ama el sol y las caricias largas. Perfecta para personas que trabajan desde casa.",
+      image: "https://cataas.com/cat/says/Nieve?width=400&height=300",
+      tags: ["Esterilizada", "Vacunada", "Serena"],
+      color: "Blanco puro"
+    },
+    {
+      id: 5,
+      name: "Tigre",
+      age: "3 años",
+      gender: "Macho",
+      description: "Tigre es inteligente y curioso. Le gusta explorar cada rincón de la casa. Se lleva bien con otros gatos.",
+      image: "https://cataas.com/cat/says/Tigre?width=400&height=300",
+      tags: ["Castrado", "Sociable con gatos", "Curioso"],
+      color: "Atigrado café"
+    },
+    {
+      id: 6,
+      name: "Perla",
+      age: "5 años",
+      gender: "Hembra",
+      description: "Perla es una gatita muy tranquila y agradecida. Pasó tiempo en la calle y ahora busca su hogar definitivo.",
+      image: "https://cataas.com/cat/says/Perla?width=400&height=300",
+      tags: ["Esterilizada", "Rescatada", "Agradecida"],
+      color: "Blanca con manchas café"
+    }
+  ];
+
+  let selectedCatName = '';
+
+  function renderCats() {
+    const grid = document.getElementById('adoptionGrid');
+    grid.innerHTML = cats.map(cat => `
+      <div class="adoption-card">
+        <div class="adoption-image">
+          <img
+            src="${cat.image}"
+            alt="Foto de ${cat.name}"
+            onerror="this.src=''; this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'>😺</div>'"
+          />
+          <span class="adoption-badge">${cat.gender}</span>
+        </div>
+        <div class="adoption-info">
+          <h3 class="adoption-name">${cat.name}</h3>
+          <div class="adoption-meta">
+            <span>🎂 ${cat.age}</span>
+            <span>🎨 ${cat.color}</span>
+          </div>
+          <p class="adoption-description">${cat.description}</p>
+          <div class="adoption-tags">
+            ${cat.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+          </div>
+          <button class="btn-primary btn-block" onclick="openModal('${cat.name}')">
+            🐾 Quiero adoptarlo
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openModal(catName) {
+    selectedCatName = catName;
+    document.getElementById('modalCatName').textContent = catName;
+    document.getElementById('adoptionModal').style.display = 'flex';
+    document.getElementById('formMsg').style.display = 'none';
+    // Pre-llenar email si está logueado
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.email) document.getElementById('adopterEmail').value = user.email;
+    if (user.fullName) document.getElementById('adopterName').value = user.fullName;
+    if (user.phone) document.getElementById('adopterPhone').value = user.phone;
+    if (user.address) document.getElementById('adopterAddress').value = user.address;
+  }
+
+  function closeModal() {
+    document.getElementById('adoptionModal').style.display = 'none';
+    // Limpiar formulario
+    ['adopterName','adopterEmail','adopterPhone','adopterAddress','adopterMessage'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type !== 'email')) {
+        // solo limpiar los que no son email (lo guardamos por UX)
+      }
+    });
+    document.getElementById('adopterMessage').value = '';
+    document.getElementById('adopterHousing').value = '';
+  }
+
+  function submitAdoption() {
+    const name = document.getElementById('adopterName').value.trim();
+    const email = document.getElementById('adopterEmail').value.trim();
+    const phone = document.getElementById('adopterPhone').value.trim();
+    const address = document.getElementById('adopterAddress').value.trim();
+    const housing = document.getElementById('adopterHousing').value;
+    const formMsg = document.getElementById('formMsg');
+
+    if (!name || !email || !phone || !address || !housing) {
+      formMsg.textContent = 'Por favor completa todos los campos obligatorios.';
+      formMsg.className = 'alert alert-error';
+      formMsg.style.display = 'block';
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      formMsg.textContent = 'Por favor ingresa un correo electrónico válido.';
+      formMsg.className = 'alert alert-error';
+      formMsg.style.display = 'block';
+      return;
+    }
+
+    // Simulamos el envío (aquí se conectaría al endpoint /api/v1/adoption)
+    formMsg.textContent = `¡Solicitud enviada! Te contactaremos pronto sobre ${selectedCatName}. 🐾`;
+    formMsg.className = 'alert alert-success';
+    formMsg.style.display = 'block';
+
+    setTimeout(() => {
+      closeModal();
+      const adoptionMsg = document.getElementById('adoptionMsg');
+      adoptionMsg.textContent = `✓ Solicitud de adopción de ${selectedCatName} enviada correctamente. ¡Te contactaremos pronto!`;
+      adoptionMsg.className = 'alert alert-success';
+      adoptionMsg.style.display = 'block';
+      setTimeout(() => { adoptionMsg.style.display = 'none'; }, 5000);
+    }, 1500);
+  }
+
+  // Cerrar modal con ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  renderCats();
+</script>

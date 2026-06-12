@@ -1,0 +1,167 @@
+<section class="shop-header">
+  <h2>🛍️ Tienda para Gatos</h2>
+  <div class="category-filters" id="categoryFilters">
+    <button class="filter-btn active" data-category="all">Todos</button>
+    <button class="filter-btn" data-category="alimento">Alimento</button>
+    <button class="filter-btn" data-category="accesorio">Accesorios</button>
+    <button class="filter-btn" data-category="juguete">Juguetes</button>
+    <button class="filter-btn" data-category="higiene">Higiene</button>
+    <button class="filter-btn" data-category="cama">Camas</button>
+  </div>
+</section>
+
+<!-- Mensaje de error si la API falla -->
+<div id="errorMsg" class="alert alert-error" style="display:none;"></div>
+
+<!-- Mensaje de éxito al agregar al carrito -->
+<div id="successMsg" class="alert alert-success" style="display:none;"></div>
+
+<!-- Grid de productos — se llena dinámicamente con JS -->
+<div class="products-grid" id="productsGrid">
+  <p class="loading-text">Cargando productos...</p>
+</div>
+
+<script>
+  let allProducts = [];
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+    await loadProducts();
+    setupFilters();
+  });
+
+  async function loadProducts() {
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch('/api/v1/products', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return;
+      }
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        document.getElementById('errorMsg').textContent = result.message;
+        document.getElementById('errorMsg').style.display = 'block';
+        return;
+      }
+
+      allProducts = result.data;
+      renderProducts(allProducts);
+
+    } catch (error) {
+      document.getElementById('errorMsg').textContent = 'Error al cargar los productos.';
+      document.getElementById('errorMsg').style.display = 'block';
+    }
+  }
+
+  function renderProducts(products) {
+    const grid = document.getElementById('productsGrid');
+
+    if (products.length === 0) {
+      grid.innerHTML = '<p class="empty-text">No hay productos en esta categoría.</p>';
+      return;
+    }
+
+    grid.innerHTML = products.map(product => `
+      <div class="product-card">
+        <div class="product-image">
+          ${product.image
+            ? `<img src="${product.image}" alt="${product.name}" />`
+            : `<div class="product-image-placeholder">🐱</div>`
+          }
+        </div>
+        <div class="product-info">
+          <span class="product-category">${product.category}</span>
+          <h3 class="product-name">${product.name}</h3>
+          <p class="product-description">${product.description || ''}</p>
+          <div class="product-footer">
+            <span class="product-price">$${Number(product.price).toLocaleString('es-CL')}</span>
+            <span class="product-stock ${product.stock < 5 ? 'low-stock' : ''}">
+              ${product.stock > 0 ? `Stock: ${product.stock}` : 'Sin stock'}
+            </span>
+          </div>
+          <button
+            class="btn-primary btn-block"
+            onclick="addToCart('${product.id}', '${product.name}')"
+            ${product.stock === 0 ? 'disabled' : ''}
+          >
+            ${product.stock > 0 ? 'Agregar al carrito' : 'Sin stock'}
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function addToCart(productId, productName) {
+    const token = localStorage.getItem('token');
+    const successMsg = document.getElementById('successMsg');
+    const errorMsg = document.getElementById('errorMsg');
+
+    successMsg.style.display = 'none';
+    errorMsg.style.display = 'none';
+
+    try {
+      const response = await fetch('/api/v1/cart/items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ productId, quantity: 1 }),
+      });
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        errorMsg.textContent = result.message;
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      updateCartCount(result.data.itemCount);
+
+      successMsg.textContent = `✓ "${productName}" agregado al carrito.`;
+      successMsg.style.display = 'block';
+
+      setTimeout(() => { successMsg.style.display = 'none'; }, 2000);
+
+    } catch (error) {
+      errorMsg.textContent = 'Error al agregar al carrito.';
+      errorMsg.style.display = 'block';
+    }
+  }
+
+  function setupFilters() {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const category = btn.dataset.category;
+
+        if (category === 'all') {
+          renderProducts(allProducts);
+        } else {
+          renderProducts(allProducts.filter(p => p.category === category));
+        }
+      });
+    });
+  }
+
+  function updateCartCount(count) {
+    const cartCount = document.getElementById('cartCount');
+    if (cartCount) cartCount.textContent = count;
+  }
+</script>

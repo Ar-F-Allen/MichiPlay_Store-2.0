@@ -1,0 +1,226 @@
+<section class="cart-header">
+  <h2>🛒 Mi carrito</h2>
+  <a href="/shop" class="btn-outline">← Seguir comprando</a>
+</section>
+
+<div id="errorMsg" class="alert alert-error" style="display:none;"></div>
+<div id="successMsg" class="alert alert-success" style="display:none;"></div>
+
+<!-- Contenido del carrito — se llena dinámicamente -->
+<div id="cartContainer">
+  <p class="loading-text">Cargando carrito...</p>
+</div>
+
+<script>
+  window.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+    await loadCart();
+  });
+
+  // Carga el carrito del usuario desde la API
+  async function loadCart() {
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch('/api/v1/cart', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return;
+      }
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        document.getElementById('errorMsg').textContent = result.message;
+        document.getElementById('errorMsg').style.display = 'block';
+        return;
+      }
+
+      renderCart(result.data);
+
+    } catch (error) {
+      document.getElementById('errorMsg').textContent = 'Error al cargar el carrito.';
+      document.getElementById('errorMsg').style.display = 'block';
+    }
+  }
+
+  // Dibuja el carrito completo con sus ítems y el resumen del total
+  function renderCart(cart) {
+    const container = document.getElementById('cartContainer');
+    updateCartCount(cart.itemCount);
+
+    if (cart.items.length === 0) {
+      container.innerHTML = `
+        <div class="cart-empty">
+          <p>Tu carrito está vacío 🛒</p>
+          <a href="/shop" class="btn-primary">Ver productos</a>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="cart-layout">
+        <div class="cart-items">
+          ${cart.items.map(item => `
+            <div class="cart-item" id="item-${item.id}">
+              <div class="cart-item-image">
+                ${item.product.image
+                  ? `<img src="/uploads/products/${item.product.image}" alt="${item.product.name}" />`
+                  : `<div class="product-image-placeholder small">🐾</div>`
+                }
+              </div>
+              <div class="cart-item-info">
+                <h4>${item.product.name}</h4>
+                <span class="cart-item-category">${item.product.category}</span>
+                <p class="cart-item-price">$${Number(item.unitPrice).toLocaleString('es-CL')} c/u</p>
+              </div>
+              <div class="cart-item-controls">
+                <div class="quantity-controls">
+                  <button onclick="changeQuantity('${item.id}', ${item.quantity - 1})" class="qty-btn" ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
+                  <span class="qty-value">${item.quantity}</span>
+                  <button onclick="changeQuantity('${item.id}', ${item.quantity + 1})" class="qty-btn" ${item.quantity >= item.product.stock ? 'disabled' : ''}>+</button>
+                </div>
+                <p class="cart-item-subtotal">$${(Number(item.unitPrice) * item.quantity).toLocaleString('es-CL')}</p>
+                <button onclick="removeItem('${item.id}')" class="btn-danger-sm">Eliminar</button>
+              </div>
+            </div>
+          `).join('')}
+          <button onclick="clearCart()" class="btn-outline btn-sm">Vaciar carrito</button>
+        </div>
+
+        <div class="cart-summary">
+          <h3>Resumen del pedido</h3>
+          <div class="summary-row">
+            <span>Productos (${cart.itemCount})</span>
+            <span>$${Number(cart.total).toLocaleString('es-CL')}</span>
+          </div>
+          <div class="summary-row summary-total">
+            <strong>Total</strong>
+            <strong>$${Number(cart.total).toLocaleString('es-CL')}</strong>
+          </div>
+          <button onclick="checkout()" class="btn-primary btn-block btn-lg">
+            Finalizar compra
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Cambia la cantidad de un ítem. Si quantity es 0, lo elimina.
+  async function changeQuantity(itemId, newQuantity) {
+    if (newQuantity < 1) {
+      await removeItem(itemId);
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch(`/api/v1/cart/items/${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ quantity: newQuantity }),
+      });
+
+      const result = await response.json();
+      if (result.ok) renderCart(result.data);
+      else showError(result.message);
+
+    } catch (error) {
+      showError('Error al actualizar la cantidad.');
+    }
+  }
+
+  // Elimina un ítem del carrito
+  async function removeItem(itemId) {
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch(`/api/v1/cart/items/${itemId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      const result = await response.json();
+      if (result.ok) renderCart(result.data);
+      else showError(result.message);
+
+    } catch (error) {
+      showError('Error al eliminar el producto.');
+    }
+  }
+
+  // Vacía todo el carrito
+  async function clearCart() {
+    if (!confirm('¿Deseas vaciar el carrito?')) return;
+
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch('/api/v1/cart', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      const result = await response.json();
+      if (result.ok) renderCart(result.data);
+      else showError(result.message);
+
+    } catch (error) {
+      showError('Error al vaciar el carrito.');
+    }
+  }
+
+  // Finaliza la compra
+  async function checkout() {
+    if (!confirm('¿Confirmas la compra?')) return;
+
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch('/api/v1/cart/checkout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      const result = await response.json();
+
+      if (result.ok) {
+        document.getElementById('successMsg').textContent = `🎉 ${result.message} N° de orden: ${result.data.orderId}`;
+        document.getElementById('successMsg').style.display = 'block';
+        // Recargamos el carrito (ahora estará vacío)
+        await loadCart();
+      } else {
+        showError(result.message);
+      }
+
+    } catch (error) {
+      showError('Error al procesar la compra.');
+    }
+  }
+
+  function showError(message) {
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.textContent = message;
+    errorMsg.style.display = 'block';
+    setTimeout(() => { errorMsg.style.display = 'none'; }, 3000);
+  }
+
+  function updateCartCount(count) {
+    const cartCount = document.getElementById('cartCount');
+    if (cartCount) cartCount.textContent = count;
+  }
+</script>

@@ -1,0 +1,4 @@
+node_modules/
+.env
+src/public/uploads/products/*.jpg
+src/public/uploads/products/*.png

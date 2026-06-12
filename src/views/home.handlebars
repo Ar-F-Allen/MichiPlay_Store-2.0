@@ -1,0 +1,41 @@
+<section class="hero">
+  <div class="hero-content">
+    <h1>😺 Bienvenido a MichiPlay_Store</h1>
+    <p>Todo lo que tu gato necesita, en un solo lugar.</p>
+    <a href="/register" class="btn-primary btn-lg" id="heroBtn">Crear cuenta</a>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feature-card">
+    <span class="feature-icon">🐟</span>
+    <h3>Alimentos premium</h3>
+    <p>Croquetas, patés y snacks especialmente seleccionados para gatos.</p>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">🧶</span>
+    <h3>Juguetes y accesorios</h3>
+    <p>Rascadores, camas, juguetes y todo lo que tu michi ama.</p>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">🏡</span>
+    <h3>Adopción</h3>
+    <p>Michis esperando un hogar. ¡Quizás tu próximo compañero está aquí!</p>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">🛒</span>
+    <h3>Carrito personal</h3>
+    <p>Cada usuario tiene su propio carrito de compras.</p>
+  </div>
+</section>
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const heroBtn = document.getElementById('heroBtn');
+      heroBtn.textContent = 'Ir a la tienda';
+      heroBtn.href = '/shop';
+    }
+  });
+</script>

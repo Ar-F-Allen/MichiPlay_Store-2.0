@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{title}}</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+
+  <!-- Navbar — se muestra en todas las páginas -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">😺 MichiPlay_Store</a>
+    <div class="navbar-links" id="navLinks">
+      <!-- Se muestra si NO está logueado -->
+      <div id="guestLinks">
+        <a href="/adoption">Adopción</a>
+        <a href="/login">Iniciar sesión</a>
+        <a href="/register" class="btn-primary">Registrarse</a>
+      </div>
+      <!-- Se muestra si está logueado -->
+      <div id="authLinks" style="display:none;">
+        <a href="/shop">Tienda</a>
+        <a href="/adoption">Adopción</a>
+        <a href="/cart">🛒 <span id="cartCount">0</span></a>
+        <span id="userName"></span>
+        <button onclick="logout()" class="btn-outline">Salir</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    {{{body}}}
+  </main>
+
+  <footer class="footer">
+    <p>😺 MichiPlay_Store &copy; 2024 — La mejor tienda solo para Michis</p>
+  </footer>
+
+  <!-- Script global: maneja el estado de sesión en todas las páginas -->
+  <script src="/js/auth.js"></script>
+
+</body>
+</html>
